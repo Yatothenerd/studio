@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,500;0,700;1,500&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f6f4f0;
+      --bg-soft: #ebe8e2;
+      --bg-panel: #ffffff;
+      --fg: #14130f;
+      --muted: #8c887f;
+      --line: rgba(20, 19, 15, 0.12);
+      --accent: #14130f;
+      --danger: #c0392b;
+      --success: #27ae60;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "Inter", system-ui, sans-serif;
+      font-weight: 300;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ---------- Auth Gate ---------- */
+    #auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-box {
+      width: min(400px, 92vw);
+      text-align: center;
+    }
+
+    .auth-box h1 {
+      font-family: "Playfair Display", serif;
+      font-weight: 700;
+      font-size: 1.6rem;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.4rem;
+    }
+
+    .auth-box p {
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2.5rem;
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 0.9rem 1.2rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--fg);
+      outline: none;
+      transition: border-color 0.3s;
+      margin-bottom: 1rem;
+      letter-spacing: 0.1em;
+    }
+
+    .auth-input:focus {
+      border-color: var(--fg);
+    }
+
+    .auth-error {
+      font-size: 0.78rem;
+      color: var(--danger);
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+      min-height: 1.2em;
+    }
+
+    /* ---------- Header ---------- */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem clamp(1.5rem, 5vw, 4rem);
+      background: rgba(246, 244, 240, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .logo {
+      font-family: "Playfair Display", serif;
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: 0.2em;
+      text-decoration: none;
+      color: var(--fg);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .header-tag {
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+    }
+
+    .btn-logout {
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      padding: 0.5rem 1.2rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      font-family: inherit;
+      transition: all 0.3s var(--ease);
+    }
+
+    .btn-logout:hover {
+      border-color: var(--fg);
+      color: var(--fg);
+    }
+
+    /* ---------- Layout ---------- */
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      min-height: calc(100vh - 72px);
+    }
+
+    @media (max-width: 900px) {
+      .admin-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ---------- Sidebar ---------- */
+    .sidebar {
+      border-right: 1px solid var(--line);
+      padding: 2rem 1.5rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 72px);
+      position: sticky;
+      top: 72px;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .sidebar-title {
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .project-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .project-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.8rem 1rem;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.25s var(--ease);
+      position: relative;
+    }
+
+    .project-item:hover {
+      background: var(--bg-soft);
+      border-color: var(--line);
+    }
+
+    .project-item.active {
+      background: var(--fg);
+      color: var(--bg);
+      border-color: var(--fg);
+    }
+
+    .project-item.active .proj-meta {
+      color: rgba(246, 244, 240, 0.6);
+    }
+
+    .proj-thumb {
+      width: 36px;
+      height: 36px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: var(--bg-soft);
+    }
+
+    .project-item.active .proj-thumb {
+      filter: brightness(0.85);
+    }
+
+    .proj-info {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+    }
+
+    .proj-name {
+      font-size: 0.85rem;
+      font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .proj-meta {
+      font-size: 0.68rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.1rem;
+    }
+
+    .proj-pub {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--line);
+      flex-shrink: 0;
+    }
+
+    .proj-pub.published {
+      background: var(--success);
+    }
+
+    .project-item.active .proj-pub {
+      background: rgba(246, 244, 240, 0.4);
+    }
+
+    .project-item.active .proj-pub.published {
+      background: #6fcf97;
+    }
+
+    .order-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .order-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: inherit;
+      font-size: 0.6rem;
+      line-height: 1;
+      padding: 1px 3px;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+
+    .order-btn:hover {
+      opacity: 1;
+    }
+
+    .project-item.active .order-btn {
+      color: var(--bg);
+    }
+
+    /* ---------- Main editor ---------- */
+    .editor {
+      padding: clamp(1.5rem, 4vw, 3rem);
+      max-width: 860px;
+    }
+
+    .editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .editor-title {
+      font-family: "Playfair Display", serif;
+      font-weight: 500;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+    }
+
+    .editor-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 0.65rem 1.4rem;
+      border: 1px solid var(--fg);
+      border-radius: 999px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--fg);
+      font-family: inherit;
+      font-weight: 400;
+      transition: all 0.35s var(--ease);
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn.primary {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    .btn.primary:hover {
+      background: transparent;
+      color: var(--fg);
+    }
+
+    .btn.danger {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .btn.danger:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn.success {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .btn.success:hover {
+      background: var(--success);
+      color: #fff;
+    }
+
+    .btn.sm {
+      padding: 0.4rem 0.9rem;
+      font-size: 0.7rem;
+    }
+
+    /* Form */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 640px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 300;
+      color: var(--fg);
+      outline: none;
+      transition: border-color 0.3s;
+      border-radius: 0;
+      -webkit-appearance: none;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--fg);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238c887f'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+    }
+
+    /* Toggle */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.9rem 0;
+    }
+
+    .toggle-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      transition: all 0.3s var(--ease);
+    }
+
+    .toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: var(--muted);
+      border-radius: 50%;
+      transition: all 0.3s var(--ease);
+    }
+
+    .toggle input:checked~.toggle-track {
+      background: var(--fg);
+      border-color: var(--fg);
+    }
+
+    .toggle input:checked~.toggle-thumb {
+      transform: translateX(20px);
+      background: var(--bg);
+    }
+
+    .toggle-status {
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+    }
+
+    /* Tools tag input */
+    .tags-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0.6rem 0.8rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      min-height: 48px;
+      cursor: text;
+      transition: border-color 0.3s;
+    }
+
+    .tags-wrap:focus-within {
+      border-color: var(--fg);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+    }
+
+    .tag-remove {
+      cursor: pointer;
+      font-size: 0.9rem;
+      line-height: 1;
+      color: var(--muted);
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    .tag-remove:hover {
+      color: var(--danger);
+    }
+
+    .tag-input {
+      flex: 1;
+      min-width: 80px;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 0.88rem;
+      color: var(--fg);
+      outline: none;
+      padding: 0.15rem 0.2rem;
+    }
+
+    /* Cover image upload */
+    .image-upload-area {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .cover-preview {
+      width: 88px;
+      height: 88px;
+      object-fit: cover;
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      flex-shrink: 0;
+      display: block;
+    }
+
+    .cover-placeholder {
+      width: 88px;
+      height: 88px;
+      background: var(--bg-soft);
+      border: 1px dashed var(--line);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .upload-right {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      flex: 1;
+    }
+
+    .upload-progress {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      min-height: 1.4em;
+    }
+
+    .upload-hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    /* Section divider */
+    .section-div {
+      border: none;
+      border-top: 1px solid var(--line);
+      margin: 2.5rem 0;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+    }
+
+    /* Media gallery */
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .media-item {
+      position: relative;
+      aspect-ratio: 1;
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      group: 1;
+    }
+
+    .media-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.3s;
+    }
+
+    .media-item:hover img {
+      opacity: 0.75;
+    }
+
+    .media-item-actions {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      opacity: 0;
+      transition: opacity 0.25s;
+      background: rgba(20, 19, 15, 0.35);
+    }
+
+    .media-item:hover .media-item-actions {
+      opacity: 1;
+    }
+
+    .media-act-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(246, 244, 240, 0.9);
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .media-act-btn:hover {
+      background: #fff;
+    }
+
+    .media-act-btn.del:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .media-order {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      background: rgba(20, 19, 15, 0.65);
+      color: #fff;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      padding: 2px 5px;
+      border-radius: 2px;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 900;
+      background: var(--fg);
+      color: var(--bg);
+      padding: 0.9rem 1.5rem;
+      border-radius: 2px;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all 0.4s var(--ease);
+      pointer-events: none;
+    }
+
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    #toast.error {
+      background: var(--danger);
+    }
+
+    /* Loader */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Empty state */
+    .empty {
+      padding: 4rem 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    /* File drop zone */
+    .drop-zone {
+      border: 1px dashed var(--line);
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s var(--ease);
+    }
+
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: var(--fg);
+      background: var(--bg-soft);
+    }
+
+    .drop-zone p {
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .drop-zone input[type="file"] {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Auth Gate -->
+  <div id="auth-gate">
+    <div class="auth-box">
+      <h1>GODYATO</h1>
+      <p>Admin Access</p>
+      <input class="auth-input" type="text" id="auth-user" placeholder="Username" autocomplete="username" />
+      <input class="auth-input" type="password" id="auth-pwd" placeholder="Password" autocomplete="current-password" />
+      <div class="auth-error" id="auth-error"></div>
+      <button class="btn primary" id="auth-btn" style="width:100%">Sign In</button>
+    </div>
+  </div>
+
+  <!-- Main Admin -->
+  <div id="admin-app" style="display:none">
+    <header class="site-header">
+      <a href="index.html" class="logo">GODYATO</a>
+      <div class="header-right">
+        <span class="header-tag" id="admin-username-tag">Admin</span>
+        <button class="btn-logout" id="logout-btn">Log Out</button>
+      </div>
+    </header>
+
+    <div class="admin-layout">
+      <!-- Sidebar: project list -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-title">Projects</span>
+          <button class="btn sm" id="new-project-btn">+ New</button>
+        </div>
+        <div class="project-list" id="project-list">
+          <div class="empty">Loading…</div>
+        </div>
+      </aside>
+
+      <!-- Editor panel -->
+      <main class="editor" id="editor-panel">
+        <div class="empty" style="padding-top:6rem">
+          Select a project to edit, or create a new one.
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script type="module">
+    // ─── Config ───────────────────────────────────────────────────────────────
+    const SUPABASE_URL = 'https://azonjfwsafurowslomwl.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6b25qZndzYWZ1cm93c2xvbXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMzc2MTQsImV4cCI6MjA5NjkxMzYxNH0.qjBPXQJDx5GLxv4Rgah-049_Up39F1q3_qUufpCdn60';
+    const CLD_CLOUD = 'dywziuqs1';
+    const CLD_PRESET = 'portfolio_upload';
+
+    // ─── Supabase helpers ─────────────────────────────────────────────────────
+    const headers = () => ({
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    });
+
+    async function sbFetch(path, opts = {}) {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        ...opts,
+        headers: { ...headers(), ...(opts.headers || {}) },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || err.hint || res.statusText);
+      }
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    }
+
+    const db = {
+      getProjects: () => sbFetch('projects?select=*&order=sort_order.asc,created_at.asc'),
+      getProject: (id) => sbFetch(`projects?id=eq.${id}&select=*`).then(r => r[0]),
+      createProject: (data) => sbFetch('projects', { method: 'POST', body: JSON.stringify(data) }).then(r => r[0]),
+      updateProject: (id, data) => sbFetch(`projects?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(data) }).then(r => r && r[0]),
+      deleteProject: (id) => sbFetch(`projects?id=eq.${id}`, { method: 'DELETE', headers: { 'Prefer': '' } }),
+      getMedia: (projectId) => sbFetch(`project_media?project_id=eq.${projectId}&order=sort_order.asc`),
+      addMedia: (data) => sbFetch('project_media', { method: 'POST', body: JSON.stringify(data) }).then(r => r[0]),
+      updateMedia: (id, data) => sbFetch(`project_media?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+      deleteMedia: (id) => sbFetch(`project_media?id=eq.${id}`, { method: 'DELETE', headers: { 'Prefer': '' } }),
+      // Auth: query admin_users by username + password (plain text)
+      loginUser: (username, password) => sbFetch(
+        `admin_users?username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}&is_active=eq.true&select=id,username`
+      ),
+    };
+
+    // ─── Cloudinary upload ────────────────────────────────────────────────────
+    async function uploadToCloudinary(file, onProgress) {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', CLD_PRESET);
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLD_CLOUD}/image/upload`);
+        xhr.upload.onprogress = e => {
+          if (e.lengthComputable && onProgress) onProgress(Math.round(e.loaded / e.total * 100));
+        };
+        xhr.onload = () => {
+          const res = JSON.parse(xhr.responseText);
+          if (xhr.status === 200) resolve(res.secure_url);
+          else reject(new Error(res.error?.message || 'Upload failed'));
+        };
+        xhr.onerror = () => reject(new Error('Network error'));
+        xhr.send(fd);
+      });
+    }
+
+    // ─── Toast ────────────────────────────────────────────────────────────────
+    let toastTimer;
+    function toast(msg, isError = false) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'show' + (isError ? ' error' : '');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+    }
+
+    // ─── Auth ─────────────────────────────────────────────────────────────────
+    function isAuthed() { return sessionStorage.getItem('admin_auth') === '1'; }
+    function getStoredUsername() { return sessionStorage.getItem('admin_username') || 'Admin'; }
+
+    document.getElementById('auth-btn').addEventListener('click', doLogin);
+    document.getElementById('auth-pwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('auth-user').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('auth-pwd').focus(); });
+
+    async function doLogin() {
+      const username = document.getElementById('auth-user').value.trim();
+      const password = document.getElementById('auth-pwd').value;
+      const errEl = document.getElementById('auth-error');
+      const btn = document.getElementById('auth-btn');
+
+      if (!username || !password) {
+        errEl.textContent = 'Please enter username and password.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Signing in…';
+      errEl.textContent = '';
+
+      try {
+        const users = await db.loginUser(username, password);
+        if (users && users.length > 0) {
+          const user = users[0];
+          sessionStorage.setItem('admin_auth', '1');
+          sessionStorage.setItem('admin_username', user.username);
+          sessionStorage.setItem('admin_user_id', user.id);
+          document.getElementById('auth-gate').style.display = 'none';
+          document.getElementById('admin-app').style.display = 'block';
+          updateUsernameDisplay();
+          init();
+        } else {
+          errEl.textContent = 'Invalid username or password.';
+          document.getElementById('auth-pwd').value = '';
+        }
+      } catch (e) {
+        errEl.textContent = 'Login failed: ' + e.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    }
+
+    function updateUsernameDisplay() {
+      const tag = document.getElementById('admin-username-tag');
+      if (tag) tag.textContent = getStoredUsername();
+    }
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      sessionStorage.removeItem('admin_auth');
+      sessionStorage.removeItem('admin_username');
+      sessionStorage.removeItem('admin_user_id');
+      location.reload();
+    });
+
+    if (isAuthed()) {
+      document.getElementById('auth-gate').style.display = 'none';
+      document.getElementById('admin-app').style.display = 'block';
+      updateUsernameDisplay();
+    }
+
+    // ─── State ────────────────────────────────────────────────────────────────
+    let projects = [];
+    let activeId = null;
+    let mediaList = [];
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+    async function init() {
+      await loadProjects();
+    }
+    if (isAuthed()) init();
+
+    // ─── Load projects list ───────────────────────────────────────────────────
+    async function loadProjects() {
+      const list = document.getElementById('project-list');
+      list.innerHTML = '<div class="empty">Loading…</div>';
+      try {
+        projects = await db.getProjects();
+        renderSidebar();
+      } catch (e) {
+        list.innerHTML = `<div class="empty">${e.message}</div>`;
+      }
+    }
+
+    function renderSidebar() {
+      const list = document.getElementById('project-list');
+      if (!projects.length) {
+        list.innerHTML = '<div class="empty">No projects yet.</div>';
+        return;
+      }
+      list.innerHTML = '';
+      projects.forEach((p, i) => {
+        const el = document.createElement('div');
+        el.className = 'project-item' + (p.id === activeId ? ' active' : '');
+        el.dataset.id = p.id;
+        el.innerHTML = `
+        ${p.image ? `<img class="proj-thumb" src="${p.image}" alt="" />` : '<div class="proj-thumb" style="background:var(--bg-soft)"></div>'}
+        <div class="proj-info">
+          <div class="proj-name">${p.title || 'Untitled'}</div>
+          <div class="proj-meta">${p.year || '—'}</div>
+        </div>
+        <span class="proj-pub ${p.is_published ? 'published' : ''}" title="${p.is_published ? 'Published' : 'Draft'}"></span>
+        <div class="order-btns">
+          <button class="order-btn" data-dir="up" data-idx="${i}" title="Move up">▲</button>
+          <button class="order-btn" data-dir="down" data-idx="${i}" title="Move down">▼</button>
+        </div>
+      `;
+        el.addEventListener('click', e => {
+          if (e.target.closest('.order-btn')) return;
+          selectProject(p.id);
+        });
+        el.querySelectorAll('.order-btn').forEach(btn => {
+          btn.addEventListener('click', e => {
+            e.stopPropagation();
+            moveProject(parseInt(btn.dataset.idx), btn.dataset.dir);
+          });
+        });
+        list.appendChild(el);
+      });
+    }
+
+    async function moveProject(idx, dir) {
+      const swap = dir === 'up' ? idx - 1 : idx + 1;
+      if (swap < 0 || swap >= projects.length) return;
+      const a = projects[idx], b = projects[swap];
+      const aOrder = a.sort_order ?? idx;
+      const bOrder = b.sort_order ?? swap;
+      try {
+        await Promise.all([
+          db.updateProject(a.id, { sort_order: bOrder }),
+          db.updateProject(b.id, { sort_order: aOrder }),
+        ]);
+        [projects[idx], projects[swap]] = [projects[swap], projects[idx]];
+        renderSidebar();
+        toast('Order updated');
+      } catch (e) { toast(e.message, true); }
+    }
+
+    // ─── New project ──────────────────────────────────────────────────────────
+    document.getElementById('new-project-btn').addEventListener('click', async () => {
+      try {
+        const maxOrder = projects.reduce((m, p) => Math.max(m, p.sort_order ?? 0), 0);
+        const p = await db.createProject({
+          title: 'New Project',
+          sort_order: maxOrder + 1,
+          is_published: false,
+          year: String(new Date().getFullYear()),
+          category: 'BRANDING // ART DIRECTION',
+        });
+        projects.push(p);
+        renderSidebar();
+        selectProject(p.id);
+        toast('Project created');
+      } catch (e) { toast(e.message, true); }
+    });
+
+    // ─── Select & render editor ───────────────────────────────────────────────
+    async function selectProject(id) {
+      activeId = id;
+      renderSidebar();
+      const panel = document.getElementById('editor-panel');
+      panel.innerHTML = '<div class="empty" style="padding-top:6rem"><span class="spinner"></span></div>';
+      try {
+        const p = await db.getProject(id);
+        mediaList = await db.getMedia(id);
+        renderEditor(p);
+      } catch (e) {
+        panel.innerHTML = `<div class="empty">${e.message}</div>`;
+      }
+    }
+
+    // ─── Render editor ────────────────────────────────────────────────────────
+    function renderEditor(p) {
+      const panel = document.getElementById('editor-panel');
+      const tools = (() => { try { return JSON.parse(p.tools || '[]'); } catch { return []; } })();
+
+      panel.innerHTML = `
+      <div class="editor-header">
+        <h2 class="editor-title" id="editor-heading">${p.title || 'Untitled'}</h2>
+        <div class="editor-actions">
+          <button class="btn" id="btn-preview" title="Open gallery in new tab">↗ Preview</button>
+          <button class="btn danger" id="btn-delete">Delete</button>
+          <button class="btn primary" id="btn-save">Save</button>
+        </div>
+      </div>
+
+      <!-- Publish toggle -->
+      <div class="toggle-row" style="margin-bottom:2rem">
+        <label class="toggle" for="f-published">
+          <input type="checkbox" id="f-published" ${p.is_published ? 'checked' : ''} />
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </label>
+        <span class="toggle-label">Published</span>
+        <span class="toggle-status" id="pub-status" style="color:${p.is_published ? 'var(--success)' : 'var(--muted)'}">${p.is_published ? 'Live' : 'Draft'}</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="f-title">Title</label>
+          <input type="text" id="f-title" value="${esc(p.title || '')}" placeholder="Project title" />
+        </div>
+        <div class="form-group">
+          <label for="f-year">Year</label>
+          <input type="text" id="f-year" value="${esc(p.year || '')}" placeholder="2026" />
+        </div>
+        <div class="form-group full">
+          <label for="f-category">Category</label>
+          <input type="text" id="f-category" value="${esc(p.category || '')}" placeholder="BRANDING // ART DIRECTION" />
+        </div>
+        <div class="form-group full">
+          <label for="f-description">Short Description (gallery card)</label>
+          <textarea id="f-description" rows="2" placeholder="Brief description shown on the gallery card">${esc(p.description || '')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label for="f-long-description">Long Description (lightbox)</label>
+          <textarea id="f-long-description" rows="4" placeholder="Full description shown in the lightbox viewer">${esc(p.long_description || '')}</textarea>
+        </div>
+        <div class="form-group full">
+          <label>Tools / Tags</label>
+          <div class="tags-wrap" id="tags-wrap">
+            ${tools.map(t => `<span class="tag"><span>${esc(t)}</span><button class="tag-remove" data-tag="${esc(t)}">×</button></span>`).join('')}
+            <input class="tag-input" id="tag-input" type="text" placeholder="Add tool, press Enter…" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="f-sort-order">Sort Order</label>
+          <input type="number" id="f-sort-order" value="${p.sort_order ?? 0}" min="0" />
+        </div>
+        <div class="form-group full">
+          <label>Cover Image</label>
+          <div class="image-upload-area">
+            ${p.image
+          ? `<img class="cover-preview" id="cover-preview" src="${p.image}" alt="Cover" />`
+          : `<div class="cover-placeholder" id="cover-preview">None</div>`}
+            <div class="upload-right">
+              <label class="btn sm" style="cursor:pointer" for="cover-file-input">Upload Image</label>
+              <input type="file" id="cover-file-input" accept="image/*" style="display:none" />
+              <div class="upload-progress" id="cover-progress"></div>
+              <input type="text" id="f-image" value="${esc(p.image || '')}" placeholder="Or paste Cloudinary URL" style="font-size:0.78rem;" />
+              <p class="upload-hint">Uploads to Cloudinary via "${CLD_PRESET}" preset.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-div" />
+      <p class="section-label">Gallery Media</p>
+
+      <div class="media-grid" id="media-grid">${renderMediaGrid()}</div>
+
+      <div class="drop-zone" id="media-drop-zone">
+        <input type="file" id="media-file-input" accept="image/*" multiple />
+        <p>Drop images here or click to upload</p>
+        <p style="margin-top:0.3rem;font-size:0.65rem;opacity:0.6">Multiple files supported</p>
+      </div>
+      <div class="upload-progress" id="media-progress" style="margin-top:0.75rem;text-align:center"></div>
+    `;
+
+      // Bind events
+      document.getElementById('f-published').addEventListener('change', e => {
+        const s = document.getElementById('pub-status');
+        s.textContent = e.target.checked ? 'Live' : 'Draft';
+        s.style.color = e.target.checked ? 'var(--success)' : 'var(--muted)';
+      });
+
+      document.getElementById('f-title').addEventListener('input', e => {
+        document.getElementById('editor-heading').textContent = e.target.value || 'Untitled';
+      });
+
+      // Tags
+      const tagInput = document.getElementById('tag-input');
+      tagInput.addEventListener('keydown', e => {
+        if ((e.key === 'Enter' || e.key === ',') && tagInput.value.trim()) {
+          e.preventDefault();
+          addTag(tagInput.value.trim());
+          tagInput.value = '';
+        } else if (e.key === 'Backspace' && !tagInput.value) {
+          removeLastTag();
+        }
+      });
+      document.getElementById('tags-wrap').addEventListener('click', e => {
+        if (e.target.classList.contains('tag-remove')) {
+          e.target.closest('.tag').remove();
+        } else {
+          tagInput.focus();
+        }
+      });
+
+      // Cover upload
+      document.getElementById('cover-file-input').addEventListener('change', async e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        await uploadCover(file);
+      });
+
+      // Media drop zone
+      const dropZone = document.getElementById('media-drop-zone');
+      const mediaInput = document.getElementById('media-file-input');
+      dropZone.addEventListener('click', () => mediaInput.click());
+      dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+      dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        uploadMediaFiles(Array.from(e.dataTransfer.files));
+      });
+      mediaInput.addEventListener('change', e => uploadMediaFiles(Array.from(e.target.files)));
+
+      // Save
+      document.getElementById('btn-save').addEventListener('click', saveProject);
+
+      // Delete
+      document.getElementById('btn-delete').addEventListener('click', deleteProject);
+
+      // Preview
+      document.getElementById('btn-preview').addEventListener('click', () => window.open('index.html', '_blank'));
+    }
+
+    function renderMediaGrid() {
+      if (!mediaList.length) return '<div style="grid-column:1/-1;color:var(--muted);font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;">No media yet.</div>';
+      return mediaList.map((m, i) => `
+      <div class="media-item" data-media-id="${m.id}">
+        <img src="${m.image_url}" alt="" loading="lazy" />
+        <span class="media-order">${m.sort_order}</span>
+        <div class="media-item-actions">
+          <button class="media-act-btn" data-order-up data-idx="${i}" title="Move left">◀</button>
+          <button class="media-act-btn del" data-delete-media="${m.id}" title="Delete">✕</button>
+          <button class="media-act-btn" data-order-down data-idx="${i}" title="Move right">▶</button>
+        </div>
+      </div>
+    `).join('');
+    }
+
+    function refreshMediaGrid() {
+      const grid = document.getElementById('media-grid');
+      if (grid) grid.innerHTML = renderMediaGrid();
+      bindMediaGridEvents();
+    }
+
+    function bindMediaGridEvents() {
+      document.querySelectorAll('[data-delete-media]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = parseInt(btn.dataset.deleteMedia);
+          if (!confirm('Delete this image?')) return;
+          try {
+            await db.deleteMedia(id);
+            mediaList = mediaList.filter(m => m.id !== id);
+            refreshMediaGrid();
+            toast('Image deleted');
+          } catch (e) { toast(e.message, true); }
+        });
+      });
+      document.querySelectorAll('[data-order-up]').forEach(btn => {
+        btn.addEventListener('click', () => swapMedia(parseInt(btn.dataset.idx), parseInt(btn.dataset.idx) - 1));
+      });
+      document.querySelectorAll('[data-order-down]').forEach(btn => {
+        btn.addEventListener('click', () => swapMedia(parseInt(btn.dataset.idx), parseInt(btn.dataset.idx) + 1));
+      });
+    }
+
+    async function swapMedia(i, j) {
+      if (j < 0 || j >= mediaList.length) return;
+      const a = mediaList[i], b = mediaList[j];
+      try {
+        await Promise.all([
+          db.updateMedia(a.id, { sort_order: b.sort_order }),
+          db.updateMedia(b.id, { sort_order: a.sort_order }),
+        ]);
+        [mediaList[i].sort_order, mediaList[j].sort_order] = [mediaList[j].sort_order, mediaList[i].sort_order];
+        [mediaList[i], mediaList[j]] = [mediaList[j], mediaList[i]];
+        refreshMediaGrid();
+      } catch (e) { toast(e.message, true); }
+    }
+
+    // Cover upload
+    async function uploadCover(file) {
+      const progress = document.getElementById('cover-progress');
+      progress.textContent = 'Uploading…';
+      const btn = document.querySelector('label[for="cover-file-input"]');
+      btn.textContent = '…';
+      try {
+        const url = await uploadToCloudinary(file, pct => { progress.textContent = `${pct}%`; });
+        document.getElementById('f-image').value = url;
+        const preview = document.getElementById('cover-preview');
+        if (preview.tagName === 'IMG') {
+          preview.src = url;
+        } else {
+          const img = document.createElement('img');
+          img.className = 'cover-preview';
+          img.id = 'cover-preview';
+          img.src = url;
+          img.alt = 'Cover';
+          preview.replaceWith(img);
+        }
+        progress.textContent = 'Uploaded ✓';
+        toast('Cover uploaded');
+      } catch (e) {
+        progress.textContent = e.message;
+        toast(e.message, true);
+      } finally {
+        btn.textContent = 'Upload Image';
+      }
+    }
+
+    // Media upload
+    async function uploadMediaFiles(files) {
+      if (!files.length) return;
+      const progress = document.getElementById('media-progress');
+      for (let i = 0; i < files.length; i++) {
+        progress.textContent = `Uploading ${i + 1} / ${files.length}…`;
+        try {
+          const url = await uploadToCloudinary(files[i], pct => {
+            progress.textContent = `Uploading ${i + 1} / ${files.length} — ${pct}%`;
+          });
+          const maxOrder = mediaList.reduce((m, x) => Math.max(m, x.sort_order ?? 0), 0);
+          const media = await db.addMedia({ project_id: activeId, image_url: url, sort_order: maxOrder + 1 });
+          mediaList.push(media);
+          refreshMediaGrid();
+        } catch (e) {
+          toast(`Failed: ${e.message}`, true);
+        }
+      }
+      progress.textContent = files.length > 1 ? `${files.length} images uploaded ✓` : 'Uploaded ✓';
+      setTimeout(() => { progress.textContent = ''; }, 2500);
+    }
+
+    // ─── Save project ─────────────────────────────────────────────────────────
+    async function saveProject() {
+      const btn = document.getElementById('btn-save');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Saving';
+
+      const tools = Array.from(document.querySelectorAll('#tags-wrap .tag span')).map(s => s.textContent);
+
+      const data = {
+        title: document.getElementById('f-title').value.trim(),
+        year: document.getElementById('f-year').value.trim(),
+        category: document.getElementById('f-category').value.trim(),
+        description: document.getElementById('f-description').value.trim(),
+        long_description: document.getElementById('f-long-description').value.trim(),
+        image: document.getElementById('f-image').value.trim(),
+        tools: JSON.stringify(tools),
+        sort_order: parseInt(document.getElementById('f-sort-order').value) || 0,
+        is_published: document.getElementById('f-published').checked,
+      };
+
+      try {
+        await db.updateProject(activeId, data);
+        // refresh sidebar
+        const idx = projects.findIndex(p => p.id === activeId);
+        if (idx !== -1) Object.assign(projects[idx], data);
+        renderSidebar();
+        toast('Saved');
+      } catch (e) {
+        toast(e.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save';
+      }
+    }
+
+    // ─── Delete project ───────────────────────────────────────────────────────
+    async function deleteProject() {
+      const p = projects.find(x => x.id === activeId);
+      if (!confirm(`Delete "${p?.title || 'this project'}"? This cannot be undone.`)) return;
+      try {
+        await db.deleteProject(activeId);
+        projects = projects.filter(x => x.id !== activeId);
+        activeId = null;
+        mediaList = [];
+        renderSidebar();
+        document.getElementById('editor-panel').innerHTML = '<div class="empty" style="padding-top:6rem">Project deleted.</div>';
+        toast('Project deleted');
+      } catch (e) { toast(e.message, true); }
+    }
+
+    // ─── Tag helpers ──────────────────────────────────────────────────────────
+    function addTag(text) {
+      const wrap = document.getElementById('tags-wrap');
+      const input = document.getElementById('tag-input');
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.innerHTML = `<span>${esc(text)}</span><button class="tag-remove" data-tag="${esc(text)}">×</button>`;
+      tag.querySelector('.tag-remove').addEventListener('click', () => tag.remove());
+      wrap.insertBefore(tag, input);
+    }
+
+    function removeLastTag() {
+      const tags = document.querySelectorAll('#tags-wrap .tag');
+      if (tags.length) tags[tags.length - 1].remove();
+    }
+
+    // ─── Util ─────────────────────────────────────────────────────────────────
+    function esc(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+
+</html>

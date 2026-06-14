@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STUDIO — Gallery</title>
+  <meta name="description" content="GODYATO — a curated gallery of photography, visual direction, and design work by Tropicwathna Sun." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Gallery loading state */
+    .gallery-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 300px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+    }
+    .gallery-loading .load-spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--muted);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: gspin 0.7s linear infinite;
+      margin-right: 0.75rem;
+    }
+    @keyframes gspin { to { transform: rotate(360deg); } }
+    .gallery-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 300px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body class="home">
+  <div class="cursor"></div>
+  <div class="cursor-ring"></div>
+
+  <header class="site-header">
+    <a href="index.html" class="logo" data-magnetic>GODYATO</a>
+    <nav class="nav">
+      <a href="index.html" class="nav-link active" data-magnetic>Work</a>
+      <a href="about.html" class="nav-link" data-magnetic>About</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="gallery-section" aria-label="Interactive gallery">
+      <div class="grid-scroll-wrapper">
+        <div class="gallery grid-scroll-inner" id="gallery-grid" aria-label="Image gallery">
+          <div class="masonry-sizer"></div>
+          <div class="masonry-gutter"></div>
+          <!-- Cards are rendered dynamically from Supabase -->
+          <div class="gallery-loading" id="gallery-loading">
+            <span class="load-spinner"></span> Loading gallery…
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Project card viewer (Polaroid) -->
+  <div class="viewer" id="viewer" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="viewer-backdrop" data-close></div>
+    <button class="viewer-nav prev" id="viewer-prev" aria-label="Previous project">&larr;</button>
+    <button class="viewer-nav next" id="viewer-next" aria-label="Next project">&rarr;</button>
+    <button class="viewer-close" id="viewer-close" aria-label="Close">&times;</button>
+    <figure class="polaroid" id="polaroid">
+      <span class="tape tape-l"></span>
+      <span class="tape tape-r"></span>
+      <div class="polaroid-photo"><img id="viewer-img" src="" alt="" /></div>
+      <figcaption class="polaroid-caption">
+        <p class="viewer-index" id="viewer-index">No. 01</p>
+        <h2 class="viewer-title" id="viewer-title">Untitled</h2>
+        <p class="viewer-desc" id="viewer-desc"></p>
+        <div class="viewer-meta" id="viewer-meta"></div>
+      </figcaption>
+    </figure>
+  </div>
+
+  <!-- Supabase config + data fetching -->
+  <script>
+    // Shared Supabase config for the frontend
+    window.SUPABASE_URL = 'https://azonjfwsafurowslomwl.supabase.co';
+    window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6b25qZndzYWZ1cm93c2xvbXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzMzc2MTQsImV4cCI6MjA5NjkxMzYxNH0.qjBPXQJDx5GLxv4Rgah-049_Up39F1q3_qUufpCdn60';
+
+    // This will be populated from Supabase before gallery3d.js and app.js run
+    window.GALLERY_PROJECTS = [];
+
+    (async function loadGalleryData() {
+      const grid = document.getElementById('gallery-grid');
+      const loading = document.getElementById('gallery-loading');
+
+      try {
+        const res = await fetch(
+          `${window.SUPABASE_URL}/rest/v1/projects?select=*,project_media(*)&is_published=eq.true&order=sort_order.asc,created_at.asc`,
+          {
+            headers: {
+              'apikey': window.SUPABASE_KEY,
+              'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error('Failed to load projects');
+        const projects = await res.json();
+
+        if (!projects || projects.length === 0) {
+          if (loading) loading.innerHTML = '<span class="gallery-empty">No projects published yet.</span>';
+          window.GALLERY_PROJECTS = [];
+          return;
+        }
+
+        // Populate global project data for app.js viewer + gallery3d.js
+        window.GALLERY_PROJECTS = projects.map((p, i) => {
+          let tags = [];
+          try { tags = JSON.parse(p.tools || '[]'); } catch(e) { tags = []; }
+          if (p.year && !tags.includes(p.year)) tags.push(p.year);
+          if (p.category) {
+            p.category.split('//').map(s => s.trim()).filter(Boolean).forEach(t => {
+              if (!tags.includes(t)) tags.push(t);
+            });
+          }
+          const num = String(i + 1).padStart(2, '0');
+          let mediaUrls = [];
+          if (p.image) {
+            mediaUrls.push(p.image);
+          }
+          if (p.project_media && Array.isArray(p.project_media)) {
+            // Sort by sort_order
+            const sortedMedia = p.project_media.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+            sortedMedia.forEach(m => {
+              if (m.image_url && m.image_url !== p.image) {
+                mediaUrls.push(m.image_url);
+              }
+            });
+          }
+          if (mediaUrls.length === 0) {
+            mediaUrls.push(`images/${num}.svg`);
+          }
+
+          return {
+            id: p.id,
+            title: p.title || 'Untitled',
+            desc: p.description || p.long_description || '',
+            long_desc: p.long_description || p.description || '',
+            image: p.image || '',
+            media: mediaUrls,
+            tags: tags,
+            year: p.year || '',
+            category: p.category || '',
+          };
+        });
+
+        // Remove loading indicator
+        if (loading) loading.remove();
+
+        // Render gallery cards for all media images (thumbnail + gallery images)
+        let globalCardIndex = 0;
+        window.GALLERY_PROJECTS.forEach((p, projectIdx) => {
+          const num = String(projectIdx + 1).padStart(2, '0');
+          
+          p.media.forEach((imgUrl, mediaIdx) => {
+            const tiltNum = (globalCardIndex % 8) + 1; // Cycle 1 through 8 sequentially
+            globalCardIndex++;
+            
+            const card = document.createElement('a');
+            card.href = "javascript:void(0)";
+            card.className = `masonry-item tilt-${tiltNum}`;
+            card.dataset.index = projectIdx;
+            card.dataset.mediaIndex = mediaIdx;
+            card.innerHTML = `
+              <div class="article-image-wrapper">
+                <img class="article-image" src="${imgUrl}" alt="${p.title || 'Untitled No. ' + num}" loading="lazy" />
+                <div class="article-overlay"></div>
+                <div class="article-info">
+                  <div class="article-name">${p.title || 'No. ' + num}</div>
+                  <div class="article-type">${p.category || 'PROJECT'}</div>
+                </div>
+              </div>
+            `;
+            grid.appendChild(card);
+          });
+        });
+
+        // Signal that data is ready; set flag so app.js can check if it loaded late
+        window.GALLERY_READY = true;
+        window.dispatchEvent(new CustomEvent('gallery:data-ready'));
+
+      } catch (e) {
+        console.error('Gallery load error:', e);
+        if (loading) {
+          loading.innerHTML = '<span class="gallery-empty">Could not load gallery. Please try again later.</span>';
+        }
+      }
+    })();
+  </script>
+
+  <script src="https://unpkg.com/imagesloaded@5.0.0/imagesloaded.pkgd.min.js"></script>
+  <script src="https://unpkg.com/masonry-layout@4.2.2/dist/masonry.pkgd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
